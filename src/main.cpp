@@ -3,52 +3,49 @@
 #include <avr/interrupt.h>
 
 #define LookupEntries (512)
-#define TARGET_AMPLITUDE 512    // Target amplitude (50% of max)
-#define KP 0.5                 // Proportional gain
-#define KI 0.1                 // Integral gain
-#define SAMPLING_TIME 50       // Sampling time in milliseconds
-#define PRINT_INTERVAL 250     // Print interval in milliseconds
+#define KP 0.5                 
+#define KI 0.1                 
+#define SAMPLING_TIME 50       
+#define PRINT_INTERVAL 250     
 
-static int microMHz = 16;      // clock frequency in MHz
-static int freq, amp = 1024;   // Sinusoidal frequency
-static long int period;        // Period of PWM in clock cycles
+// Serial command buffer
+#define MAX_COMMAND_LENGTH 32
+char cmdBuffer[MAX_COMMAND_LENGTH];
+int cmdIndex = 0;
+
+static int microMHz = 16;      
+static int freq = 50, amp = 1024;   
+static long int period;        
 static unsigned int lookUp[LookupEntries];
 static char theTCCR1A = 0b10000010;
 static unsigned long int phaseinc, switchFreq;
 static double phaseincMult;
 
-// Variables for PI control
+// Control variables
 static float integral = 0;
 static float error = 0;
 static float lastError = 0;
-static float targetAmplitude = TARGET_AMPLITUDE;
-static float baseOutput = 50;  // Base output level (50% of max)
-
-// Variables for testing
-static unsigned long lastPrintTime = 0;
-static int testPhase = 0;
-static float potValue = 0;
+static float targetAmplitude = 512;  // Can be modified via serial
+static float baseOutput = 50;  
 
 // Function declarations
-int setFreq(int freq);         
-int setSwitchFreq(int sfreq);  
-int setAmp(float _amp);        
-void makeLookUp(void);
-void registerInit(void);
-float calculatePI(float measured);
-void printSystemStatus(float measured, float controlOutput);
+void processSerialCommand(void);
+bool parseCommand(char* cmd, char* type, float* value);
+void sendStatus(void);
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);  // Higher baud rate for better responsiveness
   makeLookUp();
   setSwitchFreq(10000);  
   setFreq(50);
-  setAmp(baseOutput);  // Start at base output level
+  setAmp(baseOutput);
   registerInit();
   
-  Serial.println("Testing PWM Amplitude Control System");
-  Serial.println("Turn potentiometer to simulate load changes");
-  Serial.println("Format: Time(ms), Target, Measured, Control Output, Error");
+  Serial.println("SPWM Controller Ready");
+  Serial.println("Commands:");
+  Serial.println("A<value> - Set target amplitude (0-1023)");
+  Serial.println("F<value> - Set frequency (1-1000 Hz)");
+  Serial.println("S - Request status");
 }
 
 void loop() {
@@ -56,26 +53,87 @@ void loop() {
   static int measuredAmp;
   unsigned long currentTime = millis();
   
-  // Execute control loop every SAMPLING_TIME milliseconds
+  // Process any incoming serial commands
+  if (Serial.available()) {
+    processSerialCommand();
+  }
+  
+  // Regular control loop
   if (currentTime - lastTime >= SAMPLING_TIME) {
     lastTime = currentTime;
     
-    // Read potentiometer value (0-1023)
-    potValue = analogRead(A1);
-    
-    // Simulate a disturbance by using pot value to affect measured amplitude
-    measuredAmp = potValue;
+    // Read current amplitude (you may need to modify this based on your hardware)
+    measuredAmp = analogRead(A1);
     
     // Calculate and apply new amplitude using PI control
     float controlOutput = calculatePI(measuredAmp);
     setAmp(controlOutput);
+  }
+}
+
+void processSerialCommand() {
+  while (Serial.available() > 0) {
+    char inChar = Serial.read();
     
-    // Print system status at regular intervals
-    if (currentTime - lastPrintTime >= PRINT_INTERVAL) {
-      printSystemStatus(measuredAmp, controlOutput);
-      lastPrintTime = currentTime;
+    if (inChar == '\n' || inChar == '\r') {
+      if (cmdIndex > 0) {
+        cmdBuffer[cmdIndex] = '\0';  // Null terminate
+        char cmdType;
+        float value;
+        
+        // Parse and execute command
+        if (parseCommand(cmdBuffer, &cmdType, &value)) {
+          switch (cmdType) {
+            case 'A':  // Set amplitude
+              if (value >= 0 && value <= 1023) {
+                targetAmplitude = value;
+                Serial.print("New target amplitude: ");
+                Serial.println(targetAmplitude);
+              }
+              break;
+              
+            case 'F':  // Set frequency
+              if (setFreq((int)value)) {
+                Serial.print("New frequency: ");
+                Serial.println(freq);
+              }
+              break;
+              
+            case 'S':  // Status request
+              sendStatus();
+              break;
+          }
+        }
+        cmdIndex = 0;  // Reset buffer
+      }
+    }
+    else if (cmdIndex < MAX_COMMAND_LENGTH - 1) {
+      cmdBuffer[cmdIndex++] = inChar;
     }
   }
+}
+
+bool parseCommand(char* cmd, char* type, float* value) {
+  *type = cmd[0];  // First character is command type
+  
+  if (*type == 'S') {
+    return true;  // Status command doesn't need a value
+  }
+  
+  // Convert rest of string to float
+  *value = atof(cmd + 1);
+  return true;
+}
+
+void sendStatus() {
+  Serial.print("Status: F=");
+  Serial.print(freq);
+  Serial.print("Hz, A=");
+  Serial.print(targetAmplitude);
+  Serial.print(", Measured=");
+  Serial.print(analogRead(A1));
+  Serial.print(", Control=");
+  Serial.println(amp);
 }
 
 void printSystemStatus(float measured, float controlOutput) {
