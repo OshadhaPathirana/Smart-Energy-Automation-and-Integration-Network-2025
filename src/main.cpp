@@ -33,43 +33,20 @@ void processSerialCommand(void);
 bool parseCommand(char* cmd, char* type, float* value);
 void sendStatus(void);
 
-void setup() {
-  Serial.begin(115200);  // Higher baud rate for better responsiveness
-  makeLookUp();
-  setSwitchFreq(10000);  
-  setFreq(50);
-  setAmp(baseOutput);
-  registerInit();
-  
-  Serial.println("SPWM Controller Ready");
-  Serial.println("Commands:");
-  Serial.println("A<value> - Set target amplitude (0-1023)");
-  Serial.println("F<value> - Set frequency (1-1000 Hz)");
-  Serial.println("S - Request status");
-}
 
-void loop() {
-  static unsigned long lastTime = 0;
-  static int measuredAmp;
-  unsigned long currentTime = millis();
-  
-  // Process any incoming serial commands
-  if (Serial.available()) {
-    processSerialCommand();
-  }
-  
-  // Regular control loop
-  if (currentTime - lastTime >= SAMPLING_TIME) {
-    lastTime = currentTime;
-    
-    // Read current amplitude (you may need to modify this based on your hardware)
-    measuredAmp = analogRead(A1);
-    
-    // Calculate and apply new amplitude using PI control
-    float controlOutput = calculatePI(measuredAmp);
-    setAmp(controlOutput);
+///////////////////////////
+// Original helper functions remain unchanged
+int setFreq(int _freq) {
+  if(_freq < 0 || _freq > 1000) {
+    return 0;
+  } else {
+    freq = _freq;
+    phaseinc = (unsigned long int) phaseincMult*_freq;
+    return 1;
   }
 }
+///////////////////////////
+
 
 void processSerialCommand() {
   while (Serial.available() > 0) {
@@ -185,17 +162,6 @@ ISR(TIMER1_OVF_vect) {
   lastphase = phase;
   OCR1A = OCR1B = ((lookUp[phase >> 23]*period) >> 12)*amp >> 10;
 }
-
-// Original helper functions remain unchanged
-int setFreq(int _freq) {
-  if(_freq < 0 || _freq > 1000) {
-    return 0;
-  } else {
-    freq = _freq;
-    phaseinc = (unsigned long int) phaseincMult*_freq;
-    return 1;
-  }
-}
    
 int setSwitchFreq(int sfreq) {
   if(sfreq <= 0 || sfreq > 20000) {
@@ -239,4 +205,43 @@ void registerInit(void) {
   sei();
   DDRB = 0b00000110;
   pinMode(13, OUTPUT);
+}
+
+
+void setup() {
+  Serial.begin(115200);  // Higher baud rate for better responsiveness
+  makeLookUp();
+  setSwitchFreq(10000);  
+  setFreq(50);
+  setAmp(baseOutput);
+  registerInit();
+  
+  Serial.println("SPWM Controller Ready");
+  Serial.println("Commands:");
+  Serial.println("A<value> - Set target amplitude (0-1023)");
+  Serial.println("F<value> - Set frequency (1-1000 Hz)");
+  Serial.println("S - Request status");
+}
+
+void loop() {
+  static unsigned long lastTime = 0;
+  static int measuredAmp;
+  unsigned long currentTime = millis();
+  
+  // Process any incoming serial commands
+  if (Serial.available()) {
+    processSerialCommand();
+  }
+  
+  // Regular control loop
+  if (currentTime - lastTime >= SAMPLING_TIME) {
+    lastTime = currentTime;
+    
+    // Read current amplitude (you may need to modify this based on your hardware)
+    measuredAmp = analogRead(A1);
+    
+    // Calculate and apply new amplitude using PI control
+    float controlOutput = calculatePI(measuredAmp);
+    setAmp(controlOutput);
+  }
 }

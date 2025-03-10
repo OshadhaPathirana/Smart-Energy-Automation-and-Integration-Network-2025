@@ -108,7 +108,6 @@ float calculatePI(float measured) {
   return output;
 }
 
-// Rest of the original functions remain unchanged
 ISR(TIMER1_OVF_vect) {
   static unsigned long int phase, lastphase;
   static char delay1, trig = LOW;
