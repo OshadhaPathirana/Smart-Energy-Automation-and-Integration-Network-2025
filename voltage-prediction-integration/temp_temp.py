@@ -70,10 +70,11 @@ from(bucket: "{database}")
 
 try:
     tables = query_client.query_api().query(query)
+    #print(tables)
     for table in tables:
         for record in table.records:
             print(f"reading --> Time: {record.get_time()}, Voltage: {record.get_value()}")
-            new_data = [[record.get_value(), 62]]  # Example input
+            new_data = [[record.get_value(), 60]]  # Example input
             new_data_scaled = scaler.transform(new_data)
             predicted_class = clf.predict(new_data_scaled)
             predicted_voltage = label_encoder.inverse_transform(predicted_class)
