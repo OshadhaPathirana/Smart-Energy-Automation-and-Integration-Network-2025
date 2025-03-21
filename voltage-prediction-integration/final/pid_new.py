@@ -72,6 +72,17 @@ def simulate_inverter(initial_voltage, target_voltage, Kp, Ki, Kd):
         time_elapsed += time_step
 
     print("Target voltage reached!")
+    
+    
+
+query = f"""
+from(bucket: "{database}")
+  |> range(start: -1h)
+  |> filter(fn: (r) => r["_measurement"] == "Inverters")
+  |> filter(fn: (r) => r["_field"] == "Voltage")
+  |> last()
+"""
+
 
 # Parameters
 initial_voltage = 200  # Starting voltage (can be 200V or 250V)

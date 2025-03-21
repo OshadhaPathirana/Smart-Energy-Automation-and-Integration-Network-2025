@@ -100,6 +100,11 @@ predicted_data = {
         "Inverter_ID": "3",
         "Measurement": "Voltage",
         "Value": predicted_voltage[2],
+    },
+        "point4": {
+        "Inverter_ID": "4",
+        "Measurement": "Voltage",
+        "Value": predicted_voltage[3],
     }
 }
 
@@ -115,7 +120,7 @@ predicted_data = {
 
 # print("Data Written to InfluxDB.")
 
-for i in range(3):
+for i in range(4):
     print(f" predicted value of inverter {(i+1)}: {predicted_voltage[i]}")
 
 
