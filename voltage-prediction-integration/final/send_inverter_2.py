@@ -19,7 +19,7 @@ client = InfluxDBClient3(host=host, token=token, org=org)
 query_client = InfluxDBClient(url=host, token=token, org=org)
 
 
-predicted_voltage = np.array([200])
+predicted_voltage = np.array([230])
 
 predicted_data = {
     "point1": {

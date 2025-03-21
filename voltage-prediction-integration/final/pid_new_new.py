@@ -78,33 +78,52 @@ def simulate_inverter(initial_voltage, target_voltage, Kp, Ki, Kd):
     pid = PIDController(Kp, Ki, Kd, target_voltage)
 
     # Simulate the system
-    current_voltage = initial_voltage
+    current_voltage_1 = initial_voltage
+    current_voltage_2 = 230
     time_step = 0.1  # Time step for simulation (in seconds)
     time_elapsed = 0
 
-    print(f"Starting voltage: {current_voltage}V, Target voltage: {target_voltage}V")
-    print("Time (s)\tVoltage (V)\tControl Signal")
+    # print(f"Starting voltage: {current_voltage_1}V, Target voltage: {target_voltage}V")
+    # print("Time (s)\tVoltage (V)\tControl Signal")
 
-    while abs(target_voltage - current_voltage) > 0.1:  # Stop when close to target
+    while (abs(target_voltage - current_voltage_1) > 0.1 or abs(target_voltage - current_voltage_2) > 0.1):  # Stop when close to target
         
         
-        predicted_voltage = [0]
+        predicted_voltage = [0,0]
         
         # Compute control signal using PID
-        control_signal = pid.compute(current_voltage)
+        control_signal_1 = pid.compute(current_voltage_1)
+        control_signal_2 = pid.compute(current_voltage_2)
 
         # Simulate the effect of the control signal on the voltage
         # (This is a simple model; replace with your actual system dynamics)
-        current_voltage += control_signal * time_step
+        current_voltage_1 += control_signal_1 * time_step
+        current_voltage_2 += control_signal_2 * time_step
         
-        predicted_voltage[0] = int(current_voltage) 
+        predicted_voltage[0] = int(current_voltage_1) 
+        predicted_voltage[1] = int(current_voltage_2)
         
         predicted_data = {
-        "point1": {
-        "Inverter_ID": "1",
-        "Measurement": "voltage",
-        "Value": predicted_voltage[0],
-    }
+            "point1": {
+            "Inverter_ID": "1",
+            "Measurement": "voltage",
+            "Value": predicted_voltage[0],
+            },
+            "point2": {
+            "Inverter_ID": "2",
+            "Measurement": "voltage",
+            "Value": predicted_voltage[1],
+            },
+            "point3": {
+            "Inverter_ID": "3",
+            "Measurement": "voltage",
+            "Value": predicted_voltage[1],
+            },
+            "point4": {
+            "Inverter_ID": "4",
+            "Measurement": "voltage",
+            "Value": predicted_voltage[1],
+            }
         }
         
         for key in predicted_data:
@@ -114,16 +133,77 @@ def simulate_inverter(initial_voltage, target_voltage, Kp, Ki, Kd):
                 .field(predicted_data[key]["Measurement"], predicted_data[key]["Value"])
                 )
             client.write(database=database, record=point)
-            time.sleep(1)
+            time.sleep(0.5)
 
         print("Data Written to InfluxDB.")
 
         # Print results
-        print(f"{time_elapsed:.2f}\t\t{current_voltage:.2f}\t\t{control_signal:.2f}")
+        print(f"{time_elapsed:.2f}\t\t{current_voltage_1:.2f}\t\t{control_signal_1:.2f}")
 
         # Wait for the next time step
         time.sleep(time_step)
         time_elapsed += time_step
+        
+    
+    current_voltage_3 = target_voltage
+        
+    while (abs(230 - current_voltage_3) > 0.1): # Stop when close to target
+        
+        
+        predicted_voltage = [0]
+        
+        # Compute control signal using PID
+        control_signal_3 = pid.compute(current_voltage_3)
+        
+        # Simulate the effect of the control signal on the voltage
+        # (This is a simple model; replace with your actual system dynamics)
+        current_voltage_3 += control_signal_3 * time_step
+                
+        predicted_voltage[0] = int(current_voltage_3)
+        
+        predicted_data = {
+            "point1": {
+            "Inverter_ID": "1",
+            "Measurement": "voltage",
+            "Value": predicted_voltage[0],
+            },
+            "point2": {
+            "Inverter_ID": "2",
+            "Measurement": "voltage",
+            "Value": predicted_voltage[0],
+            },
+            "point3": {
+            "Inverter_ID": "3",
+            "Measurement": "voltage",
+            "Value": predicted_voltage[0],
+            },
+            "point4": {
+            "Inverter_ID": "4",
+            "Measurement": "voltage",
+            "Value": predicted_voltage[0],
+            }
+        }
+        
+        for key in predicted_data:
+            point = (
+                Point("ML")
+                .tag("Inverter_ID", predicted_data[key]["Inverter_ID"])
+                .field(predicted_data[key]["Measurement"], predicted_data[key]["Value"])
+                )
+            client.write(database=database, record=point)
+            time.sleep(0.5)
+
+        print("Data Written to InfluxDB.")
+
+        # Print results
+        print(f"{time_elapsed:.2f}\t\t{current_voltage_1:.2f}\t\t{control_signal_1:.2f}")
+
+        # Wait for the next time step
+        time.sleep(time_step)
+        time_elapsed += time_step
+
+
+    
 
     print("Target voltage reached!")
     
