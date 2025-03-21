@@ -27,7 +27,7 @@ from(bucket: "{database}")
   |> last()
 """
 
-predicted_voltage = np.array([300])
+predicted_voltage = np.array([230])
 
 predicted_data = {
     "point1": {

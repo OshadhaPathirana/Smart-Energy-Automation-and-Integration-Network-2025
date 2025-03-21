@@ -13,6 +13,30 @@ database = "Bucket1"
 client = InfluxDBClient3(host=host, token=token, org=org)
 query_client = InfluxDBClient(url=host, token=token, org=org)
 
+query = f"""
+from(bucket: "{database}")
+  |> range(start: -1h)
+  |> filter(fn: (r) => r["_measurement"] == "Inverters")
+  |> filter(fn: (r) => r["_field"] == "Voltage")
+  |> last()
+"""
+
+influx_data = []
+predicted_voltage = []
+try:
+    tables = query_client.query_api().query(query)
+    print(tables)
+    for table in tables:
+        for record in table.records:
+            print(f"reading --> Time: {record.get_time()}, Voltage: {record.get_value()}")
+            influx_data.append(record.get_value())
+            
+            
+except Exception as e:
+    print(f"Error querying data: {e}")
+
+
+
 class PIDController:
     def __init__(self, Kp, Ki, Kd, setpoint):
         self.Kp = Kp  # Proportional gain
@@ -45,6 +69,11 @@ class PIDController:
         return output
 
 def simulate_inverter(initial_voltage, target_voltage, Kp, Ki, Kd):
+    
+    
+    
+
+
     # Initialize PID controller
     pid = PIDController(Kp, Ki, Kd, target_voltage)
 
@@ -57,12 +86,37 @@ def simulate_inverter(initial_voltage, target_voltage, Kp, Ki, Kd):
     print("Time (s)\tVoltage (V)\tControl Signal")
 
     while abs(target_voltage - current_voltage) > 0.1:  # Stop when close to target
+        
+        
+        predicted_voltage = [0]
+        
         # Compute control signal using PID
         control_signal = pid.compute(current_voltage)
 
         # Simulate the effect of the control signal on the voltage
         # (This is a simple model; replace with your actual system dynamics)
         current_voltage += control_signal * time_step
+        
+        predicted_voltage[0] = int(current_voltage) 
+        
+        predicted_data = {
+        "point1": {
+        "Inverter_ID": "1",
+        "Measurement": "voltage",
+        "Value": predicted_voltage[0],
+    }
+        }
+        
+        for key in predicted_data:
+            point = (
+                Point("ML")
+                .tag("Inverter_ID", predicted_data[key]["Inverter_ID"])
+                .field(predicted_data[key]["Measurement"], predicted_data[key]["Value"])
+                )
+            client.write(database=database, record=point)
+            time.sleep(1)
+
+        print("Data Written to InfluxDB.")
 
         # Print results
         print(f"{time_elapsed:.2f}\t\t{current_voltage:.2f}\t\t{control_signal:.2f}")
@@ -72,10 +126,17 @@ def simulate_inverter(initial_voltage, target_voltage, Kp, Ki, Kd):
         time_elapsed += time_step
 
     print("Target voltage reached!")
+    
+    
+
+
+
 
 # Parameters
-initial_voltage = 200  # Starting voltage (can be 200V or 250V)
-target_voltage = 230   # Desired voltage
+initial_voltage = influx_data[0]# Starting voltage (can be 200V or 250V)
+print(f"initial voltage: {initial_voltage}")
+target_voltage = (230 + initial_voltage)/2    # Desired voltage
+print(f"target voltage: {target_voltage}")
 Kp = 2              # Proportional gain (tune as needed)
 Ki = 0.1              # Integral gain (tune as needed)
 Kd = 0.05             # Derivative gain (tune as needed)

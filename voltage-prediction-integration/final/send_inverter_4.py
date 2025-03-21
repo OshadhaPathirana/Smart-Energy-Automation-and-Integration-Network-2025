@@ -19,11 +19,19 @@ client = InfluxDBClient3(host=host, token=token, org=org)
 query_client = InfluxDBClient(url=host, token=token, org=org)
 
 
+query = f"""
+from(bucket: "{database}")
+  |> range(start: -1h)
+  |> filter(fn: (r) => r["_measurement"] == "Inverters")
+  |> filter(fn: (r) => r["_field"] == "Voltage")
+  |> last()
+"""
+
 predicted_voltage = np.array([230])
 
 predicted_data = {
     "point1": {
-        "Inverter_ID": "2",
+        "Inverter_ID": "4",
         "Measurement": "Voltage",
         "Value": predicted_voltage[0],
     }
