@@ -67,17 +67,21 @@ from(bucket: "{database}")
   |> filter(fn: (r) => r["_field"] == "Voltage")
   |> last()
 """
-
+influx_data = []
+predicted_voltage = []
 try:
     tables = query_client.query_api().query(query)
-    #print(tables)
+    print(tables)
     for table in tables:
+        count = 0
         for record in table.records:
             print(f"reading --> Time: {record.get_time()}, Voltage: {record.get_value()}")
-            new_data = [[record.get_value(), 60]]  # Example input
+            influx_data.append(record.get_value())
+            new_data = [[influx_data[count], 50]]  # Example input
             new_data_scaled = scaler.transform(new_data)
             predicted_class = clf.predict(new_data_scaled)
-            predicted_voltage = label_encoder.inverse_transform(predicted_class)
+            predicted_voltage.append(label_encoder.inverse_transform(predicted_class))
+            count += 1
 except Exception as e:
     print(f"Error querying data: {e}")
 
@@ -86,21 +90,33 @@ predicted_data = {
         "Inverter_ID": "1",
         "Measurement": "Voltage",
         "Value": predicted_voltage[0],
+    },
+    "point2": {
+        "Inverter_ID": "2",
+        "Measurement": "Voltage",
+        "Value": predicted_voltage[1],
+    },
+    "point3": {
+        "Inverter_ID": "3",
+        "Measurement": "Voltage",
+        "Value": predicted_voltage[2],
     }
 }
 
 # Writing Data to InfluxDB
-for key in predicted_data:
-    point = (
-        Point("ML")
-        .tag("Inverter_ID", predicted_data[key]["Inverter_ID"])
-        .field(predicted_data[key]["Measurement"], predicted_data[key]["Value"])
-    )
-    client.write(database=database, record=point)
-    time.sleep(1)
+# for key in predicted_data:
+#     point = (
+#         Point("ML")
+#         .tag("Inverter_ID", predicted_data[key]["Inverter_ID"])
+#         .field(predicted_data[key]["Measurement"], predicted_data[key]["Value"])
+#     )
+#     client.write(database=database, record=point)
+#     time.sleep(1)
 
-print("Data Written to InfluxDB.")
-print(f" predicted value: {predicted_voltage[0]}")
+# print("Data Written to InfluxDB.")
+
+for i in range(3):
+    print(f" predicted value of inverter {(i+1)}: {predicted_voltage[i]}")
 
 
 # Reading Data from InfluxDB
