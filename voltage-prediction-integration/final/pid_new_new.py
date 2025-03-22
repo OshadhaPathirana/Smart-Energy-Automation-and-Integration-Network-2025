@@ -87,7 +87,7 @@ def simulate_inverter(initial_voltage, target_voltage, Kp, Ki, Kd):
     # print(f"Starting voltage: {current_voltage_1}V, Target voltage: {target_voltage}V")
     # print("Time (s)\tVoltage (V)\tControl Signal")
 
-    while (abs(target_voltage - current_voltage_1) > 0.1 or abs(target_voltage - current_voltage_2) > 0.1):  # Stop when close to target
+    while (abs(target_voltage - current_voltage_1) > 1 or abs(target_voltage - current_voltage_2) > 1):  # Stop when close to target
         
         
         predicted_voltage = [0,0]
@@ -271,7 +271,7 @@ def simulate_inverter_increasing(initial_voltage, target_voltage, Kp, Ki, Kd):
 # Parameters
 initial_voltage = influx_data[0] # Starting voltage (can be 200V or 250V)
 print(f"initial voltage: {initial_voltage}")
-target_voltage = (230 + initial_voltage)/8 # Desired voltage
+target_voltage = (230 + initial_voltage)/10 # Desired voltage
 print(f"target voltage: {target_voltage}")
 Kp = 2              # Proportional gain (tune as needed)
 Ki = 0.1              # Integral gain (tune as needed)
