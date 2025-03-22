@@ -273,15 +273,16 @@ initial_voltage = influx_data[0] # Starting voltage (can be 200V or 250V)
 print(f"initial voltage: {initial_voltage}")
 target_voltage = (230 + initial_voltage)/10 # Desired voltage
 print(f"target voltage: {target_voltage}")
-Kp = 2              # Proportional gain (tune as needed)
-Ki = 0.1              # Integral gain (tune as needed)
-Kd = 0.05             # Derivative gain (tune as needed)
+Kp = 10            # Proportional gain (tune as needed)
+Ki = 1              # Integral gain (tune as needed)
+Kd = 0.05           # Derivative gain (tune as needed)
 
 # Run simulation
 val = simulate_inverter(initial_voltage, target_voltage, Kp, Ki, Kd)
 
-Kp = 8.5              # Proportional gain (tune as needed)
-Ki = 0.15              # Integral gain (tune as needed)
-Kd = 0.07
+print(f"val: {val}")
+Kp = 7   
+Ki = 0.25      
+Kd = 3
 
 simulate_inverter_increasing(val, 230, Kp, Ki, Kd)
