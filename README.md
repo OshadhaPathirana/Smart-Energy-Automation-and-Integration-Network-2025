@@ -3,16 +3,33 @@
 A cutting-edge smart inverter system designed for integration into Smart Microgrids and the Smart National Grid. Our solution leverages IoT, advanced control systems, and machine learning to create an adaptive, fault-resilient energy platform.
 
 ## 📸 Project Snapshots
-
-### 👨‍💻 Our Team
-<img src="Images/20250411_210455.jpg" alt="Team Photo" width="25%"/>
-
-### 💡 Inverter - Product View
-<img src="Images/20250322_183350.jpg" alt="Product View" width="25%"/>
+<table>
+  <tr>
+    <td align="center">
+      <img src="Images/20250411_210455.jpg" alt="Team Photo" width="90%"/><br/>
+      <sub><b>👨‍💻 Our Team</b></sub>
+    </td>
+    <td align="center">
+      <img src="Images/20250322_183350.jpg" alt="Product View" width="90%"/><br/>
+      <sub><b>💡 Product View</b></sub>
+    </td>
+  </tr>
+</table>
 
 ### 🔧 Inverter Internals
-<img src="Images/20250314_214203.jpg" alt="Inverter Internals 1" width="25%"/>  
-<img src="Images/20250314_215549.jpg" alt="Inverter Internals 2" width="25%"/>
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="Images/20250314_214203.jpg" alt="Inverter Internals 1" width="75%"/><br/>
+      <sub><b>🔧 Internal View 1</b></sub>
+    </td>
+    <td align="center">
+      <img src="Images/20250314_215549.jpg" alt="Inverter Internals 2" width="75%"/><br/>
+      <sub><b>🔧 Internal View 2</b></sub>
+    </td>
+  </tr>
+</table>
 
 ---
 
