@@ -13,28 +13,7 @@ database = "Bucket1"
 client = InfluxDBClient3(host=host, token=token, org=org)
 query_client = InfluxDBClient(url=host, token=token, org=org)
 
-query = f"""
-from(bucket: "{database}")
-  |> range(start: -1h)
-  |> filter(fn: (r) => r["_measurement"] == "Inverters")
-  |> filter(fn: (r) => r["_field"] == "voltage")
-  |> last()
-"""
 
-influx_data = []
-predicted_voltage = []
-try:
-    tables = query_client.query_api().query(query)
-    print(tables)
-    for table in tables:
-        for record in table.records:
-            print(f"reading --> Time: {record.get_time()}, Voltage: {record.get_value()}")
-            influx_data.append(record.get_value()/1000)
-            
-            
-            
-except Exception as e:
-    print(f"Error querying data: {e}")
 
 
 
@@ -267,22 +246,52 @@ def simulate_inverter_increasing(initial_voltage, target_voltage, Kp, Ki, Kd):
         time_elapsed += time_step
 
 
+def main():
+    x = 0
+    while(True):
+        x += 1;
+        print(f"count: {x}")
+        query = f"""
+        from(bucket: "{database}")
+        |> range(start: -3h)
+        |> filter(fn: (r) => r["_measurement"] == "Inverters")
+        |> filter(fn: (r) => r["_field"] == "voltage")
+        |> last()
+        """
 
+        influx_data = []
+        predicted_voltage = []
+        try:
+            tables = query_client.query_api().query(query)
+            print(tables)
+            for table in tables:
+                for record in table.records:
+                    print(f"reading --> Time: {record.get_time()}, Voltage: {record.get_value()}")
+                    influx_data.append(record.get_value()/1000)
+            
+            
+            
+        except Exception as e:
+            print(f"Error querying data: {e}")
 # Parameters
-initial_voltage = influx_data[0] # Starting voltage (can be 200V or 250V)
-print(f"initial voltage: {initial_voltage}")
-target_voltage = (230 + initial_voltage)/10 # Desired voltage
-print(f"target voltage: {target_voltage}")
-Kp = 10            # Proportional gain (tune as needed)
-Ki = 1              # Integral gain (tune as needed)
-Kd = 0.05           # Derivative gain (tune as needed)
+        initial_voltage = influx_data[0] # Starting voltage (can be 200V or 250V)
+        print(f"initial voltage: {initial_voltage}")
+        target_voltage = (230 + initial_voltage)/10 # Desired voltage
+        print(f"target voltage: {target_voltage}")
+        Kp = 10            # Proportional gain (tune as needed)
+        Ki = 1              # Integral gain (tune as needed)
+        Kd = 0.05           # Derivative gain (tune as needed)
 
 # Run simulation
-val = simulate_inverter(initial_voltage, target_voltage, Kp, Ki, Kd)
+        val = simulate_inverter(initial_voltage, target_voltage, Kp, Ki, Kd)
 
-print(f"val: {val}")
-Kp = 7   
-Ki = 0.25      
-Kd = 3
+        print(f"val: {val}")
+        Kp = 7   
+        Ki = 0.25      
+        Kd = 3
 
-simulate_inverter_increasing(val, 230, Kp, Ki, Kd)
+        simulate_inverter_increasing(val, 230, Kp, Ki, Kd)
+
+
+if (__name__ == "__main__"):
+    main()

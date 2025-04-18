@@ -30,15 +30,15 @@ predicted_data = {
 }
 
 # Writing Data to InfluxDB
-while (True):
-    for key in predicted_data:
-        point = (
-            Point("ML")
-            .tag("Inverter_ID", predicted_data[key]["Inverter_ID"])
-            .field(predicted_data[key]["Measurement"], predicted_data[key]["Value"])
-        )
-        client.write(database=database, record=point)
-        time.sleep(1)
+
+for key in predicted_data:
+    point = (
+        Point("Inverters")
+        .tag("Inverter_ID", predicted_data[key]["Inverter_ID"])
+        .field(predicted_data[key]["Measurement"], predicted_data[key]["Value"])
+    )
+    client.write(database=database, record=point)
+    time.sleep(1)
 
 print("Data Written to InfluxDB.")
 print(f" predicted value: {predicted_voltage[0]}")
