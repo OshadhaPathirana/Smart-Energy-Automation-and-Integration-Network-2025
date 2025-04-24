@@ -24,7 +24,7 @@ predicted_voltage = np.array([230*1000])
 predicted_data = {
     "point1": {
         "Inverter_ID": "2",
-        "Measurement": "voltage",
+        "Measurement": "Voltage",
         "Value": predicted_voltage[0],
     }
 }
