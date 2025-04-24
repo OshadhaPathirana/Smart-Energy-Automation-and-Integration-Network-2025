@@ -27,11 +27,11 @@ from(bucket: "{database}")
   |> last()
 """
 
-predicted_voltage = np.array([230])
+predicted_voltage = np.array([230*1000])
 
 predicted_data = {
     "point1": {
-        "Inverter_ID": "4",
+        "Inverter_ID": "2",
         "Measurement": "voltage",
         "Value": predicted_voltage[0],
     }

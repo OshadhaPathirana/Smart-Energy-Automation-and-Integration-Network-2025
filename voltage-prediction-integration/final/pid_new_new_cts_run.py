@@ -253,9 +253,9 @@ def main():
         print(f"count: {x}")
         query = f"""
         from(bucket: "{database}")
-        |> range(start: -3h)
+        |> range(start: -6h)
         |> filter(fn: (r) => r["_measurement"] == "Inverters")
-        |> filter(fn: (r) => r["_field"] == "voltage")
+        |> filter(fn: (r) => r["_field"] == "Voltage")
         |> last()
         """
 
@@ -276,19 +276,21 @@ def main():
 # Parameters
         initial_voltage = influx_data[0] # Starting voltage (can be 200V or 250V)
         print(f"initial voltage: {initial_voltage}")
-        target_voltage = (230 + initial_voltage)/10 # Desired voltage
+        target_voltage = 50 #(230 + initial_voltage)/10 # Desired voltage
         print(f"target voltage: {target_voltage}")
-        Kp = 10            # Proportional gain (tune as needed)
+    
+       
+        Kp = 50      # Proportional gain (tune as needed)
         Ki = 1              # Integral gain (tune as needed)
-        Kd = 0.05           # Derivative gain (tune as needed)
+        Kd = 0.05  # Derivative gain (tune as needed)
 
 # Run simulation
         val = simulate_inverter(initial_voltage, target_voltage, Kp, Ki, Kd)
 
         print(f"val: {val}")
-        Kp = 7   
+        Kp = 2   
         Ki = 0.25      
-        Kd = 3
+        Kd = 7
 
         simulate_inverter_increasing(val, 230, Kp, Ki, Kd)
 
