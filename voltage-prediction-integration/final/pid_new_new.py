@@ -274,9 +274,9 @@ print(influx_data)
 print(f"initial voltage: {initial_voltage}")
 target_voltage = 50 #(100 + initial_voltage)/10 # Desired voltage
 print(f"target voltage: {target_voltage}")
-Kp = 50      # Proportional gain (tune as needed)
+Kp = 60      # Proportional gain (tune as needed)
 Ki = 1              # Integral gain (tune as needed)
-Kd = 0.05      # Derivative gain (tune as needed)
+Kd = 0.1      # Derivative gain (tune as needed)
 
 # Run simulation
 val = simulate_inverter(initial_voltage, target_voltage, Kp, Ki, Kd)
