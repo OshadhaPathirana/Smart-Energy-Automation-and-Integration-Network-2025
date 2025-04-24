@@ -116,7 +116,7 @@ while True:
     # Step 1: Lower voltage to intermediate target
     target_voltage = 50
     print(f"Target voltage: {target_voltage} V")
-    val = simulate_inverter(initial_voltage, target_voltage, Kp=125, Ki=1, Kd=2.1)
+    val = simulate_inverter(initial_voltage, target_voltage, Kp=125, Ki=1, Kd=2.)
 
     # Step 2: Increase voltage back to 230V
     simulate_inverter_increasing(val, 230, Kp=2, Ki=0.25, Kd=7)
