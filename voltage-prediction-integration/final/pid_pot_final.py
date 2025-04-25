@@ -13,6 +13,8 @@ database = "Bucket1"
 client = InfluxDBClient3(host=host, token=token, org=org)
 query_client = InfluxDBClient(url=host, token=token, org=org)
 
+pot = 0
+
 class PIDController:
     def __init__(self, Kp, Ki, Kd, setpoint):
         self.Kp = Kp
@@ -45,8 +47,12 @@ def get_latest_voltage():
         tables = query_client.query_api().query(query)
         for table in tables:
             for record in table.records:
-                print(f"printing record: {record}")
-                influx_data.append(record.get_value() / 1000)
+                # print(f"printing record: {record}")
+                if (record["Inverter_ID"] == '5'):
+                    global pot
+                    pot = record.get_value()
+                else:
+                    influx_data.append(record.get_value() / 1000)
         if influx_data:
             return influx_data[0]
     except Exception as e:
@@ -110,17 +116,22 @@ def simulate_inverter_increasing(initial_voltage, target_voltage, Kp, Ki, Kd):
         time_elapsed += time_step
 
 # === Continuous Execution ===
+
+
 while (True):
     initial_voltage = get_latest_voltage()
     print(f"\nInitial voltage: {initial_voltage} V")
 
+    if (pot ==1):
+        
     # Step 1: Lower voltage to intermediate target
-    target_voltage = 50
-    print(f"Target voltage: {target_voltage} V")
-    val = simulate_inverter(initial_voltage, target_voltage, Kp=125, Ki=1, Kd=2.)
+        target_voltage = 50
+        print(f"Target voltage: {target_voltage} V")
+        val = simulate_inverter(initial_voltage, target_voltage, Kp=125, Ki=1, Kd=2.)
 
     # Step 2: Increase voltage back to 230V
-    simulate_inverter_increasing(val, 230, Kp=2, Ki=0.25, Kd=7)
+        simulate_inverter_increasing(val, 230, Kp=2, Ki=0.25, Kd=7)
 
-    print("One full cycle completed. Waiting before next iteration...\n")
-    time.sleep(0.1)  # Pause before next cycle
+        print("One full cycle completed. Waiting before next iteration...\n")
+        time.sleep(0.1)  # Pause before next cycle
+        pot = 0
