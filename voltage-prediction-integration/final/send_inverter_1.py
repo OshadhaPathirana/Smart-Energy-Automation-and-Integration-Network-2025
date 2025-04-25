@@ -18,7 +18,7 @@ database = "Bucket1"
 client = InfluxDBClient3(host=host, token=token, org=org)
 query_client = InfluxDBClient(url=host, token=token, org=org)
 
-predicted_voltage = np.array([120*1000])
+predicted_voltage = np.array([230*1000])
 
 predicted_data = {
     "point1": {
@@ -31,7 +31,7 @@ predicted_data = {
 # Writing Data to InfluxDB
 for key in predicted_data:
     point = (
-        Point("Inverters")
+        Point("ML")
         .tag("Inverter_ID", predicted_data[key]["Inverter_ID"])
         .field(predicted_data[key]["Measurement"], predicted_data[key]["Value"])
     )
