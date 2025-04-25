@@ -40,7 +40,7 @@ predicted_data = {
 # Writing Data to InfluxDB
 for key in predicted_data:
     point = (
-        Point("Inverters")
+        Point("ML")
         .tag("Inverter_ID", predicted_data[key]["Inverter_ID"])
         .field(predicted_data[key]["Measurement"], predicted_data[key]["Value"])
     )
