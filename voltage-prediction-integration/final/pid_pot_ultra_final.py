@@ -119,7 +119,7 @@ def simulate_inverter_increasing(initial_voltage, target_voltage, Kp, Ki, Kd):
         time_elapsed += time_step
 
 # === Continuous Execution ===
-write_voltage_to_influx([0,230])
+write_voltage_to_influx([230,230])
 
 while (True):
     initial_voltage = get_latest_voltage()

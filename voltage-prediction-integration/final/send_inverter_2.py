@@ -24,7 +24,7 @@ predicted_voltage = np.array([230*1000])
 predicted_data = {
     "point1": {
         "Inverter_ID": "2",
-        "Measurement": "Voltage",
+        "Measurement": "voltage",
         "Value": predicted_voltage[0],
     }
 }
@@ -33,7 +33,7 @@ predicted_data = {
 
 for key in predicted_data:
     point = (
-        Point("Inverters")
+        Point("ML")
         .tag("Inverter_ID", predicted_data[key]["Inverter_ID"])
         .field(predicted_data[key]["Measurement"], predicted_data[key]["Value"])
     )
