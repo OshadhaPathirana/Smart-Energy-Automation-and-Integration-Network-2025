@@ -1,5 +1,7 @@
 # ⚡ Smart Solar Inverter System (SEIAN)
 
+[![License: CC BY-NC 4.0](https://img.shields.io/badge/License-CC%20BY--NC%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc/4.0/)
+
 A cutting-edge smart inverter system designed for integration into Smart Microgrids and the Smart National Grid. Our solution leverages IoT, advanced control systems, and machine learning to create an adaptive, fault-resilient energy platform.
 
 ## 📸 Project Snapshots
