@@ -27,7 +27,7 @@ from(bucket: "{database}")
   |> last()
 """
 
-predicted_voltage = np.array([230])
+predicted_voltage = np.array([100])
 
 predicted_data = {
     "point1": {
@@ -40,7 +40,7 @@ predicted_data = {
 # Writing Data to InfluxDB
 for key in predicted_data:
     point = (
-        Point("ML")
+        Point("Inverters")
         .tag("Inverter_ID", predicted_data[key]["Inverter_ID"])
         .field(predicted_data[key]["Measurement"], predicted_data[key]["Value"]*1000)
     )

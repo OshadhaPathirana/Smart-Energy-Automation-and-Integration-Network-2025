@@ -15,7 +15,7 @@ query_client = InfluxDBClient(url=host, token=token, org=org)
 
 query = f"""
 from(bucket: "{database}")
-  |> range(start: -1h)
+  |> range(start: -6h)
   |> filter(fn: (r) => r["_measurement"] == "Inverters")
   |> filter(fn: (r) => r["_field"] == "Voltage")
   |> last()
@@ -81,7 +81,7 @@ def simulate_inverter(initial_voltage, target_voltage, Kp, Ki, Kd):
     # Simulate the system
     current_voltage_1 = initial_voltage
     current_voltage_2 = 230
-    time_step = 0.1  # Time step for simulation (in seconds)
+    time_step = 0.01 # Time step for simulation (in seconds)
     time_elapsed = 0
 
     # print(f"Starting voltage: {current_voltage_1}V, Target voltage: {target_voltage}V")
@@ -208,7 +208,7 @@ def simulate_inverter(initial_voltage, target_voltage, Kp, Ki, Kd):
 def simulate_inverter_increasing(initial_voltage, target_voltage, Kp, Ki, Kd):
     pid = PIDController(Kp, Ki, Kd, target_voltage)
     current_voltage = initial_voltage
-    time_step = 0.1  # Time step for simulation (in seconds)
+    time_step = 0.1 # Time step for simulation (in seconds)
     time_elapsed = 0
     
     while abs(target_voltage - current_voltage) > 0.1:  # Stop when close to target
@@ -270,19 +270,20 @@ def simulate_inverter_increasing(initial_voltage, target_voltage, Kp, Ki, Kd):
 
 # Parameters
 initial_voltage = influx_data[0] # Starting voltage (can be 200V or 250V)
+print(influx_data)
 print(f"initial voltage: {initial_voltage}")
-target_voltage = (230 + initial_voltage)/10 # Desired voltage
+target_voltage = 50 #(100 + initial_voltage)/10 # Desired voltage
 print(f"target voltage: {target_voltage}")
-Kp = 10            # Proportional gain (tune as needed)
+Kp = 60      # Proportional gain (tune as needed)
 Ki = 1              # Integral gain (tune as needed)
-Kd = 0.05           # Derivative gain (tune as needed)
+Kd = 0.1      # Derivative gain (tune as needed)
 
 # Run simulation
 val = simulate_inverter(initial_voltage, target_voltage, Kp, Ki, Kd)
 
 print(f"val: {val}")
-Kp = 7   
+Kp = 2   
 Ki = 0.25      
-Kd = 3
+Kd = 7
 
 simulate_inverter_increasing(val, 230, Kp, Ki, Kd)

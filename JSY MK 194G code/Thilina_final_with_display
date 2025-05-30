@@ -1,0 +1,253 @@
+#if defined(ESP32)
+#include <WiFiMulti.h>
+WiFiMulti wifiMulti;
+#define DEVICE "ESP32"
+#elif defined(ESP8266)
+#include <ESP8266WiFiMulti.h>
+ESP8266WiFiMulti wifiMulti;
+#define DEVICE "ESP8266"
+#endif
+
+#include <MycilaJSY.h>
+#include <InfluxDbClient.h>
+#include <InfluxDbCloud.h>
+#include <LiquidCrystal_I2C.h>
+#include <Wire.h>
+#include <math.h>
+
+
+#define RX2 16
+#define TX2 17
+
+#define WIFI_SSID "Dialog 4G 139"  // Network Name
+#define WIFI_PASSWORD "dBb809D3"
+#define INFLUXDB_URL "https://us-east-1-1.aws.cloud2.influxdata.com"
+#define INFLUXDB_TOKEN "kBLLkVYJr_s0oz0bqfnZDFk8AH-Kp8P56uwqWeZWfgJs7WV1HfHknQpyDMiXJbsqaReU_AOxtdq2MB6_sFol7w=="
+#define INFLUXDB_ORG "8016ae0a3fa30f7e"
+#define INFLUXDB_BUCKET "Bucket1"
+
+#define I2C_ADDR    0x27
+#define LCD_COLUMNS 20
+#define LCD_LINES   4
+
+LiquidCrystal_I2C lcd(I2C_ADDR, LCD_COLUMNS, LCD_LINES);
+
+
+float v_1 = 0.0;
+float i_1 = 0.0;
+float f_1 = 0.0;
+float freq = 50.0;
+
+// Time zone info
+#define TZ_INFO "UTC5.5"
+
+Mycila::JSY jsy;
+
+// Declare InfluxDB client instance with preconfigured InfluxCloud certificate
+InfluxDBClient client(INFLUXDB_URL, INFLUXDB_ORG, INFLUXDB_BUCKET, INFLUXDB_TOKEN, InfluxDbCloud2CACert);
+
+// Declare Data point
+Point sensor("Inverters");
+
+void setup() {
+  Serial.begin(115200);
+  Wire.begin();
+  Wire.setClock(100000);
+  jsy.begin(Serial2, RX2, TX2);
+
+  // Setup wifi
+  WiFi.mode(WIFI_STA);
+  wifiMulti.addAP(WIFI_SSID, WIFI_PASSWORD);
+
+  Serial.print("Connecting to wifi");
+  while (wifiMulti.run() != WL_CONNECTED) {
+    Serial.print(".");
+    delay(100);
+  }
+  Serial.println();
+
+  // Accurate time is necessary for certificate validation and writing in batches
+  // We use the NTP servers in your area as provided by: https://www.pool.ntp.org/zone/
+  // Syncing progress and the time will be printed to Serial.
+  timeSync(TZ_INFO, "pool.ntp.org", "time.nis.gov");
+
+  // Check server connection
+  if (client.validateConnection()) {
+    Serial.print("Connected to InfluxDB: ");
+    Serial.println(client.getServerUrl());
+  } else {
+    Serial.print("InfluxDB connection failed: ");
+    Serial.println(client.getLastErrorMessage());
+  }
+
+    // Add tags to the data point
+  sensor.addTag("Inverter_ID", "2");
+
+
+  lcd.init();
+  lcd.backlight();
+ 
+  lcd.clear();
+  lcd.setCursor(2, 1); lcd.print("Welcome to SEIAN");
+  lcd.setCursor(6, 2); lcd.print("...SSI...");
+  delay(2000);
+
+  lcd.clear();
+  lcd.setCursor(1, 1); lcd.print(">> DYSON SPHERE <<");
+  delay(2000);
+ 
+  // Display field names once
+  lcd.clear();
+  lcd.setCursor(0, 0); lcd.print("Voltage  :");
+  lcd.setCursor(0, 1); lcd.print("Current  :");
+  lcd.setCursor(0, 2); lcd.print("Frequency:");
+  lcd.setCursor(0, 3); lcd.print("Power    :");
+}
+
+void loop() {
+  //manualInputAndSend();
+  freq = 49.5 + ((float)random(0, 1001) / 1000.0);
+  readAndSendData();
+  updateDisplay(v_1,i_1,freq);
+  
+}
+
+void printAggregatedData() {
+  // Query for both Voltage and Frequency
+  String query =
+    "from(bucket: \"" INFLUXDB_BUCKET "\") "
+    "|> range(start: -2s) "
+    "|> filter(fn: (r) => r[\"_measurement\"] == \"ML\") "
+    "|> filter(fn: (r) => r[\"_field\"] == \"voltage\" or r[\"_field\"] == \"Frequency\") "  // "|> filter(fn: (r) => r[\"_field\"] == \"voltage\" or r[\"_field\"] == \"Frequency\") "
+    "|> aggregateWindow(every: 1s, fn: mean, createEmpty: false) "
+    "|> yield(name: \"mean\")";
+
+  // Query the data
+  FluxQueryResult result = client.query(query);
+
+  // Process query results
+  while (result.next()) {
+    String field = result.getValueByName("_field").getString();
+    double value = result.getValueByName("_value").getDouble();
+    FluxDateTime time = result.getValueByName("_time").getDateTime();
+
+    // Print the queried data to Serial
+    if (field == "Frequency") {
+      //Serial.print("F");
+      
+      //Serial.print(value / 1000, 2);
+      Serial.print("");
+    } else {
+      Serial.print("A");
+      value = value/1000;
+      double mappedValue = mapDouble(value, 0.0, 230.0, 0.0, 1023.0);
+      Serial.println(mappedValue, 2);
+    }
+  }
+
+  result.close();
+}
+
+void readAndSendData() {
+   if (jsy.read()) {
+    v_1 = jsy.data.channel1().voltage;
+    i_1 = jsy.data.channel1().current;
+    f_1 = jsy.data.channel1().frequency;
+
+    int v1 = v_1 * 1000;  // Converting floats to integers, multiplied by 1000 for InfluxDB write
+    int f1 = freq * 1000;
+    int i1 = i_1 * 1000;
+
+    // Clear fields for reusing the point. Tags will remain the same as set above.
+    sensor.clearFields();
+
+    // Store measured value into point
+    sensor.addField("Voltage", v1);
+    sensor.addField("Current", i1);
+    sensor.addField("Frequency", f1);
+
+    // Print what we are writing to InfluxDB
+   // Serial.print("Writing to InfluxDB: ");
+    sensor.toLineProtocol();
+    //Serial.println(sensor.toLineProtocol());
+  }
+
+  // Write point to InfluxDB
+  if (!client.writePoint(sensor)) {
+    Serial.print("InfluxDB write failed: ");
+    Serial.println(client.getLastErrorMessage());
+  }
+
+  // Query aggregated data from InfluxDB
+  printAggregatedData();
+
+  //Serial.println("Waiting 1 second");
+  delay(1000);
+}
+
+
+double mapDouble(double x, double in_min, double in_max, double out_min, double out_max) {
+  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+
+void manualInputAndSend() {
+  v_1 = 220.0, i_1 = 5.0, f_1 = 50.0;  // Default values
+  unsigned long lastSendTime = 0;  // Track last send time
+  const unsigned long sendInterval = 2000;  // Send data every 2 seconds
+
+  Serial.println("Enter Voltage, Current, and Frequency (e.g., 220.5 4.8 49.9):");
+
+  while (true) {
+    // Check for Serial input and update values if available
+    if (Serial.available() > 0) {
+      String input = Serial.readStringUntil('\n');  
+      input.trim();
+
+      if (sscanf(input.c_str(), "%f %f %f", &v_1, &i_1, &f_1) == 3) {
+        Serial.println("Values updated!");
+      } else {
+        Serial.println("Invalid input! Use format: Voltage Current Frequency");
+      }
+    }
+
+    // Send data at regular intervals
+    if (millis() - lastSendTime >= sendInterval) {
+      lastSendTime = millis();
+
+      int v1 = v_1 * 1000;  // Convert to int for InfluxDB
+      int f1 = f_1 * 1000;
+      int i1 = i_1 * 1000;
+
+      sensor.clearFields();
+      sensor.addField("Voltage", v1);
+      sensor.addField("Current", i1);
+      sensor.addField("Frequency", f1);
+
+      Serial.print("Writing to InfluxDB: ");
+      Serial.println(sensor.toLineProtocol());
+
+      if (!client.writePoint(sensor)) {
+        Serial.print("InfluxDB write failed: ");
+        Serial.println(client.getLastErrorMessage());
+      }
+    }
+
+    delay(100);  // Small delay to avoid CPU overload
+  }
+}
+
+
+void updateDisplay(float voltage, float current,float frequency) {
+  voltage = fmax(0.0, voltage);
+  current = fmax(0.0, current);
+
+  float power = voltage * current;
+  
+  // Display values
+  lcd.setCursor(11, 0); lcd.print(String(voltage, 1) + "V  ");
+  lcd.setCursor(11, 1); lcd.print(String(current, 2) + "A  ");
+  lcd.setCursor(11, 2); lcd.print(String(frequency, 1) + "Hz ");
+  lcd.setCursor(11, 3); lcd.print(String(power, 1) + "W  ");
+
+  delay(1000);
+}
