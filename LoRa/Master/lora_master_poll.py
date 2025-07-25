@@ -111,3 +111,4 @@ class LoRaMaster(LoRa):
 if __name__ == "__main__":
     master = LoRaMaster(slave_map)
     master.run(cycles=3)
+
