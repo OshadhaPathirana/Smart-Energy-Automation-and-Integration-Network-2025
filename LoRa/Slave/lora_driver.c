@@ -1,14 +1,21 @@
-#include "spi_driver.h"   // Your SPI functions
+#include "lora_driver.h"
+#include "spi_driver.h"
 #include <stdint.h>
 
-#define LORA_NSS_PIN   GPIO_PIN_X   // Replace with your NSS pin definition
-#define LORA_SYNC_WORD 0x02         // This inverter's unique sync word
-#define REG_SYNC_WORD  0x39         // SX1278 register for sync word
+// Define GPIO pin used for NSS (chip select)
+#define LORA_NSS_PIN  4  // Replace with actual GPIO pin number
+
+// LoRa register addresses
+#define REG_OP_MODE     0x01
+#define REG_SYNC_WORD   0x39
+
+// Sync word specific to this inverter
+#define LORA_SYNC_WORD  0x02
 
 // Helper: Write 1 byte to LoRa register
 void lora_write_reg(uint8_t addr, uint8_t value) {
     GPIO_WritePin(LORA_NSS_PIN, 0);             // NSS low
-    spi_transfer(addr | 0x80);                  // MSB=1 → write mode
+    spi_transfer(addr | 0x80);                  // Write mode
     spi_transfer(value);
     GPIO_WritePin(LORA_NSS_PIN, 1);             // NSS high
 }
@@ -16,28 +23,26 @@ void lora_write_reg(uint8_t addr, uint8_t value) {
 // Helper: Read 1 byte from LoRa register
 uint8_t lora_read_reg(uint8_t addr) {
     GPIO_WritePin(LORA_NSS_PIN, 0);             // NSS low
-    spi_transfer(addr & 0x7F);                  // MSB=0 → read mode
+    spi_transfer(addr & 0x7F);                  // Read mode
     uint8_t val = spi_transfer(0x00);
     GPIO_WritePin(LORA_NSS_PIN, 1);             // NSS high
     return val;
 }
 
-// LoRa init sequence (only key parts shown)
+// LoRa initialization
 void lora_init(void) {
-    // Set LoRa mode (RegOpMode = 0x01)
-    lora_write_reg(0x01, 0x80);  // LoRa + standby mode
+    // Set LoRa mode and standby
+    lora_write_reg(REG_OP_MODE, 0x80);  // LoRa + standby mode
 
-    // Set frequency, power, etc. (not shown here)
-
-    // Set Sync Word
+    // Set Sync Word (unicast identity)
     lora_write_reg(REG_SYNC_WORD, LORA_SYNC_WORD);
 
-    // Optional: verify
+    // Optional: verify the sync word
     uint8_t verify = lora_read_reg(REG_SYNC_WORD);
-    if (verify == LORA_SYNC_WORD) {
-        // Sync word set successfully
+    if (verify != LORA_SYNC_WORD) {
+        // Handle sync word mismatch error (e.g., blink LED, log error)
     }
 
-    // Put LoRa into continuous receive mode (RX)
-    lora_write_reg(0x01, 0x85);  // LoRa + RX continuous mode
+    // Set to receive mode (RX continuous)
+    lora_write_reg(REG_OP_MODE, 0x85);  // LoRa + RX continuous
 }
